@@ -33,9 +33,12 @@ dependencies:
   flutter_localizations: # calendrier et textes Material en français
     sdk: flutter
 
-  # Modèles et dépôt de la séance 3
+  # Modèles et dépôt de la séance 3, téléchargés depuis GitHub.
+  # Après une mise à jour des modèles : flutter pub upgrade campusflow_models
   campusflow_models:
-    path: ../campusflow_models
+    git:
+      url: https://github.com/ERWANS2003/campusflow_models.git
+      ref: main
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
