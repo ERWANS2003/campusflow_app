@@ -30,6 +30,7 @@ ThemeData campusTheme(Brightness luminosite) {
 
   return ThemeData(
     colorScheme: couleurs,
+    fontFamily: 'Roboto', // police embarquée (assets/fonts)
     cardTheme: CardThemeData(
       elevation: 0,
       margin: const EdgeInsets.symmetric(horizontal: Tokens.m, vertical: Tokens.s / 2),

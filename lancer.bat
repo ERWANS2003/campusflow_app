@@ -21,7 +21,9 @@ if errorlevel 3 (set "cible=tests") else if errorlevel 2 (set "cible=android") e
 :preparer
 echo.
 echo === Dependances ===
-call flutter pub get || goto erreur
+rem D'abord depuis le cache (sans internet), sinon telechargement normal.
+call flutter pub get --offline >nul 2>&1 || call flutter pub get || goto erreur
+echo OK
 
 if /i "%cible%"=="chrome" goto chrome
 if /i "%cible%"=="android" goto android
@@ -32,7 +34,8 @@ goto erreur
 :chrome
 echo.
 echo === Lancement dans Chrome (r = recharger, q = quitter) ===
-call flutter run -d chrome || goto erreur
+rem --no-web-resources-cdn : le moteur web est servi en local, pas depuis Google.
+call flutter run -d chrome --no-web-resources-cdn || goto erreur
 goto fin
 
 :android

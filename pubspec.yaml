@@ -66,6 +66,17 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Roboto embarquée : sur le web, Flutter n'a pas à la télécharger,
+  # l'appli fonctionne sans internet.
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
