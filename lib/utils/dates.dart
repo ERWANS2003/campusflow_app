@@ -1,10 +1,10 @@
-// Formatage des dates en français, sans dépendance externe.
+// Formatage des dates en français avec le package intl (ajouté par
+// `flutter pub add intl`). Appeler initializeDateFormatting('fr') au démarrage.
+import 'package:intl/intl.dart';
 
-const _jours = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-const _mois = [
-  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
-];
+final _jourCourt = DateFormat.E('fr'); // « ven. »
+final _jourMois = DateFormat('d MMM', 'fr'); // « 12 nov. »
+final _jourLong = DateFormat('EEEE d MMM', 'fr'); // « vendredi 30 oct. »
 
 DateTime _jour(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -19,9 +19,9 @@ String jourRelatif(DateTime d, {DateTime? maintenant}) {
     0 => "aujourd'hui",
     1 => 'demain',
     -1 => 'hier',
-    > 1 && < 7 => '${_jours[d.weekday - 1].substring(0, 3)}.',
+    > 1 && < 7 => _jourCourt.format(d),
     < -1 && > -7 => 'il y a ${-ecart} j',
-    _ => '${d.day} ${_mois[d.month - 1]}',
+    _ => _jourMois.format(d),
   };
 }
 
@@ -30,8 +30,7 @@ String heure(DateTime d) =>
     d.minute == 0 ? '${d.hour} h' : '${d.hour} h ${d.minute.toString().padLeft(2, '0')}';
 
 /// « vendredi 30 oct. à 17 h »
-String dateLongue(DateTime d) =>
-    '${_jours[d.weekday - 1]} ${d.day} ${_mois[d.month - 1]} à ${heure(d)}';
+String dateLongue(DateTime d) => '${_jourLong.format(d)} à ${heure(d)}';
 
 /// « 1 jour avant », « 2 h avant »
 String libelleRappel(Duration? rappel) {

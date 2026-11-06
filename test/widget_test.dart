@@ -4,6 +4,7 @@ import 'package:campusflow_app/utils/dates.dart';
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 CampusStore _store({bool echec = false}) =>
     CampusStore(repository: FakeTaskRepository(delai: Duration.zero, echec: echec));
@@ -16,6 +17,8 @@ Future<void> _seConnecter(WidgetTester tester) async {
 }
 
 void main() {
+  setUpAll(() => initializeDateFormatting('fr'));
+
   testWidgets('connexion puis liste des échéances de la semaine', (tester) async {
     tester.view.physicalSize = const Size(360, 800); // téléphone du brief
     tester.view.devicePixelRatio = 1;
@@ -42,6 +45,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Lire les HIG'), findsOneWidget);
+    expect(find.text('Tâche « Lire les HIG » ajoutée'), findsOneWidget); // SnackBar
+  });
+
+  testWidgets('écran de titre : logo chargé depuis les assets', (tester) async {
+    await tester.pumpWidget(CampusFlowApp(store: _store()));
+
+    final logo = find.bySemanticsLabel('Logo CampusFlow');
+    expect(logo, findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
   });
 
   testWidgets('marquer comme fait depuis le détail', (tester) async {

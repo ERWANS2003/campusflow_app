@@ -10,7 +10,9 @@ import 'task_form_screen.dart';
 
 /// Wireframe « Échéances » : la semaine en premier, onglets À faire / Terminées,
 /// bouton « + Nouvelle tâche ».
-/// En fenêtre étendue (≥ 840 dp), la liste et le détail sont côte à côte.
+/// Si la zone de contenu fait au moins 840 dp, la liste et le détail sont côte
+/// à côte. LayoutBuilder mesure la place donnée par le parent (l'écran moins le
+/// rail de navigation), pas l'écran entier comme MediaQuery.
 class DeadlinesScreen extends StatefulWidget {
   const DeadlinesScreen({super.key});
 
@@ -24,29 +26,51 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
   @override
   Widget build(BuildContext context) {
     final store = CampusScope.of(context);
-    final etendu = MediaQuery.sizeOf(context).width >= Tokens.etendu;
 
-    void ouvrir(Task t) {
-      if (etendu) {
-        setState(() => _selection = t.id);
-      } else {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => TaskDetailScreen(taskId: t.id)),
-        );
+    Widget contenu(BuildContext context, BoxConstraints contraintes) {
+      final etendu = contraintes.maxWidth >= Tokens.etendu;
+
+      void ouvrir(Task t) {
+        if (etendu) {
+          setState(() => _selection = t.id);
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TaskDetailScreen(taskId: t.id)),
+          );
+        }
       }
-    }
 
-    final listes = TabBarView(
-      children: [
-        _ListeAFaire(taches: store.aFaire, ouvrir: ouvrir, selection: _selection),
-        _ListeSimple(
-          taches: store.terminees.reversed.toList(),
-          ouvrir: ouvrir,
-          selection: _selection,
-          vide: 'Aucune tâche terminée pour l’instant.',
-        ),
-      ],
-    );
+      final listes = TabBarView(
+        children: [
+          _ListeAFaire(taches: store.aFaire, ouvrir: ouvrir, selection: _selection),
+          _ListeSimple(
+            taches: store.terminees.reversed.toList(),
+            ouvrir: ouvrir,
+            selection: _selection,
+            vide: 'Aucune tâche terminée pour l’instant.',
+          ),
+        ],
+      );
+
+      if (!etendu) return listes;
+
+      return Row(
+        children: [
+          Expanded(flex: 2, child: listes),
+          const VerticalDivider(width: 1),
+          Expanded(
+            flex: 3,
+            child: _selection != null && store.tache(_selection!) != null
+                ? TaskDetailView(
+                    key: ValueKey(_selection),
+                    taskId: _selection!,
+                    apresSuppression: () => setState(() => _selection = null),
+                  )
+                : const _AucuneSelection(),
+          ),
+        ],
+      );
+    }
 
     return DefaultTabController(
       length: 2,
@@ -80,23 +104,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
           // 3. Erreur : message et bouton réessayer
           (_, final String message) => _Erreur(message: message, reessayer: store.charger),
           // 2. Valeur
-          _ when !etendu => listes,
-          _ => Row(
-              children: [
-                Expanded(flex: 2, child: listes),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  flex: 3,
-                  child: _selection != null && store.tache(_selection!) != null
-                      ? TaskDetailView(
-                          key: ValueKey(_selection),
-                          taskId: _selection!,
-                          apresSuppression: () => setState(() => _selection = null),
-                        )
-                      : const _AucuneSelection(),
-                ),
-              ],
-            ),
+          _ => LayoutBuilder(builder: contenu),
         },
       ),
     );
@@ -124,20 +132,29 @@ class _ListeAFaire extends StatelessWidget {
         .where((t) => !t.enRetard && ecartEnJours(t.echeance) >= 7)
         .toList();
 
-    return ListView(
+    // Une seule liste à plat : un en-tête, puis ses tâches, groupe après groupe.
+    final elements = <Object>[
+      for (final (titre, groupe) in [
+        ('En retard', enRetard),
+        ('Cette semaine', semaine),
+        ('Plus tard', plusTard),
+      ])
+        if (groupe.isNotEmpty) ...[
+          (titre: titre, nombre: groupe.length),
+          ...groupe,
+        ],
+    ];
+
+    // ListView.builder ne construit que les lignes visibles (séance 5).
+    return ListView.builder(
       padding: const EdgeInsets.only(bottom: 96), // place pour le bouton flottant
-      children: [
-        for (final (titre, groupe) in [
-          ('En retard', enRetard),
-          ('Cette semaine', semaine),
-          ('Plus tard', plusTard),
-        ])
-          if (groupe.isNotEmpty) ...[
-            _EnTete(titre: titre, nombre: groupe.length, alerte: titre == 'En retard'),
-            for (final t in groupe)
-              TaskCard(task: t, onTap: () => ouvrir(t), selectionnee: t.id == selection),
-          ],
-      ],
+      itemCount: elements.length,
+      itemBuilder: (context, i) => switch (elements[i]) {
+        final Task t => TaskCard(task: t, onTap: () => ouvrir(t), selectionnee: t.id == selection),
+        (:final String titre, :final int nombre) =>
+          _EnTete(titre: titre, nombre: nombre, alerte: titre == 'En retard'),
+        _ => const SizedBox.shrink(),
+      },
     );
   }
 }
@@ -153,12 +170,13 @@ class _ListeSimple extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (taches.isEmpty) return _Vide(texte: vide);
-    return ListView(
+    return ListView.builder(
       padding: const EdgeInsets.only(top: Tokens.s, bottom: 96),
-      children: [
-        for (final t in taches)
-          TaskCard(task: t, onTap: () => ouvrir(t), selectionnee: t.id == selection),
-      ],
+      itemCount: taches.length,
+      itemBuilder: (context, i) {
+        final t = taches[i];
+        return TaskCard(task: t, onTap: () => ouvrir(t), selectionnee: t.id == selection);
+      },
     );
   }
 }

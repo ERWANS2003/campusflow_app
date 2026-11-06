@@ -48,14 +48,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Logo CampusFlow
-                    Semantics(
-                      label: 'Logo CampusFlow',
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        child: Icon(Icons.event_available, size: 40, color: theme.colorScheme.primary),
-                      ),
+                    // Logo CampusFlow, image déclarée dans pubspec.yaml (assets)
+                    Image.asset(
+                      'assets/images/logo.png',
+                      height: 88,
+                      semanticLabel: 'Logo CampusFlow',
                     ),
                     const SizedBox(height: Tokens.m),
                     Text(

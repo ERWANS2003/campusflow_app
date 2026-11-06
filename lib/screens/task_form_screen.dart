@@ -72,16 +72,21 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     if (!_form.currentState!.validate()) return;
     final store = CampusScope.of(context);
     final description = _description.text.trim();
+    final titre = _titre.text.trim();
     // Nouvel objet complet plutôt que copyWith : permet de vider la description
     // ou de retirer le rappel (copyWith ne sait pas remettre un champ à null).
     store.enregistrer(Task(
       id: widget.existante?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
-      titre: _titre.text.trim(),
+      titre: titre,
       coursId: _coursId ?? store.cours.first.id,
       echeance: _echeance,
       description: description.isEmpty ? null : description,
       rappel: _rappel,
       terminee: widget.existante?.terminee ?? false,
+    ));
+    // SnackBar : informe sans bloquer (séance 5).
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(widget.existante == null ? 'Tâche « $titre » ajoutée' : 'Tâche « $titre » modifiée'),
     ));
     Navigator.of(context).pop();
   }

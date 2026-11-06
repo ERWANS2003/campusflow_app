@@ -57,7 +57,7 @@ class _HomeShellState extends State<HomeShell> {
             labelType: NavigationRailLabelType.all,
             leading: Padding(
               padding: const EdgeInsets.symmetric(vertical: Tokens.m),
-              child: Icon(Icons.event_available, color: Theme.of(context).colorScheme.primary, size: 32),
+              child: Image.asset('assets/images/logo.png', height: 36, semanticLabel: 'CampusFlow'),
             ),
             destinations: [
               for (final d in _destinations)

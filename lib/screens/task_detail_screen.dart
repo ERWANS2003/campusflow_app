@@ -53,9 +53,15 @@ class TaskDetailView extends StatelessWidget {
           ],
         ),
       );
-      if (ok == true) {
+      if (ok == true && context.mounted) {
+        final messages = ScaffoldMessenger.of(context);
         store.supprimer(task.id);
         apresSuppression();
+        // Dialog pour décider, SnackBar pour informer et permettre d'annuler.
+        messages.showSnackBar(SnackBar(
+          content: Text('« ${task.titre} » supprimée'),
+          action: SnackBarAction(label: 'Annuler', onPressed: () => store.enregistrer(task)),
+        ));
       }
     }
 
