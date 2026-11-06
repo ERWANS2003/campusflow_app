@@ -1,12 +1,14 @@
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../state/campus_store.dart';
+import '../providers/cours_provider.dart';
+import '../providers/taches_provider.dart';
 import '../utils/dates.dart';
 
 /// Composant « carte de tâche » du design system.
 /// La case à cocher permet de marquer comme fait sans ouvrir le détail.
-class TaskCard extends StatelessWidget {
+class TaskCard extends ConsumerWidget {
   const TaskCard({super.key, required this.task, required this.onTap, this.selectionnee = false});
 
   final Task task;
@@ -14,10 +16,9 @@ class TaskCard extends StatelessWidget {
   final bool selectionnee;
 
   @override
-  Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
     final couleurs = Theme.of(context).colorScheme;
-    final cours = store.coursDe(task.coursId);
+    final cours = ref.watch(coursParIdProvider(task.coursId));
     final quand = '${jourRelatif(task.echeance)} · ${heure(task.echeance)}';
 
     return Card(
@@ -26,7 +27,6 @@ class TaskCard extends StatelessWidget {
       child: Semantics(
         label: '${task.titre}, ${cours.nom}, échéance ${dateLongue(task.echeance)}'
             '${task.enRetard ? ', en retard' : ''}${task.terminee ? ', faite' : ''}',
-        excludeSemantics: false,
         child: ListTile(
           minVerticalPadding: 12,
           onTap: onTap,
@@ -35,7 +35,8 @@ class TaskCard extends StatelessWidget {
             semanticLabel: task.terminee
                 ? 'Marquer « ${task.titre} » à faire'
                 : 'Marquer « ${task.titre} » comme fait',
-            onChanged: (_) => store.basculer(task.id),
+            // read dans un gestionnaire d'événement, jamais watch.
+            onChanged: (_) => ref.read(tachesProvider.notifier).basculer(task.id),
           ),
           title: Text(
             task.titre,

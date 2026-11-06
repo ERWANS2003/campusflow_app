@@ -1,24 +1,28 @@
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../state/campus_store.dart';
+import '../providers/cours_provider.dart';
+import '../providers/taches_provider.dart';
 import '../theme.dart';
 import '../utils/dates.dart';
 
 /// Wireframe « Nouvelle tâche » : × Nouvelle tâche, Titre, Cours, Date, Rappel,
 /// Enregistrer. Les valeurs par défaut permettent d'ajouter en 3 appuis :
 /// bouton « Nouvelle tâche » → saisir le titre → Enregistrer.
-class TaskFormScreen extends StatefulWidget {
-  const TaskFormScreen({super.key, this.existante});
+/// Routes : /taches/nouvelle (création) et /taches/:id/modifier.
+class TaskFormScreen extends ConsumerStatefulWidget {
+  const TaskFormScreen({super.key, this.taskId});
 
-  /// null = création, sinon modification.
-  final Task? existante;
+  /// null = création, sinon id de la tâche à modifier.
+  final String? taskId;
 
   @override
-  State<TaskFormScreen> createState() => _TaskFormScreenState();
+  ConsumerState<TaskFormScreen> createState() => _TaskFormScreenState();
 }
 
-class _TaskFormScreenState extends State<TaskFormScreen> {
+class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   static const _rappels = <Duration?>[
     null,
     Duration(hours: 1),
@@ -33,11 +37,14 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   String? _coursId;
   late DateTime _echeance;
   Duration? _rappel;
+  Task? _existante;
 
   @override
   void initState() {
     super.initState();
-    final t = widget.existante;
+    // read et non watch : on lit la tâche une fois pour pré-remplir le formulaire.
+    final id = widget.taskId;
+    final t = _existante = id == null ? null : ref.read(tacheParIdProvider(id));
     _titre = TextEditingController(text: t?.titre);
     _description = TextEditingController(text: t?.description);
     _coursId = t?.coursId;
@@ -70,38 +77,37 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
 
   void _enregistrer() {
     if (!_form.currentState!.validate()) return;
-    final store = CampusScope.of(context);
     final description = _description.text.trim();
     final titre = _titre.text.trim();
     // Nouvel objet complet plutôt que copyWith : permet de vider la description
     // ou de retirer le rappel (copyWith ne sait pas remettre un champ à null).
-    store.enregistrer(Task(
-      id: widget.existante?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+    ref.read(tachesProvider.notifier).enregistrer(Task(
+      id: _existante?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       titre: titre,
-      coursId: _coursId ?? store.cours.first.id,
+      coursId: _coursId ?? ref.read(coursProvider).first.id,
       echeance: _echeance,
       description: description.isEmpty ? null : description,
       rappel: _rappel,
-      terminee: widget.existante?.terminee ?? false,
+      terminee: _existante?.terminee ?? false,
     ));
     // SnackBar : informe sans bloquer (séance 5).
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(widget.existante == null ? 'Tâche « $titre » ajoutée' : 'Tâche « $titre » modifiée'),
+      content: Text(_existante == null ? 'Tâche « $titre » ajoutée' : 'Tâche « $titre » modifiée'),
     ));
-    Navigator.of(context).pop();
+    context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
-    final modification = widget.existante != null;
+    final cours = ref.watch(coursProvider);
+    final modification = _existante != null;
 
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           tooltip: 'Fermer',
           icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.pop(),
         ),
         title: Text(modification ? 'Modifier la tâche' : 'Nouvelle tâche'),
       ),
@@ -119,10 +125,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
             ),
             const SizedBox(height: Tokens.m),
             DropdownButtonFormField<String>(
-              initialValue: _coursId ?? store.cours.first.id,
+              initialValue: _coursId ?? cours.first.id,
               decoration: const InputDecoration(labelText: 'Cours'),
               items: [
-                for (final c in store.cours) DropdownMenuItem(value: c.id, child: Text(c.nom)),
+                for (final c in cours) DropdownMenuItem(value: c.id, child: Text(c.nom)),
               ],
               onChanged: (v) => setState(() => _coursId = v),
             ),

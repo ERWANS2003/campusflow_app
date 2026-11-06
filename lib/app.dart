@@ -1,35 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'screens/home_shell.dart';
-import 'screens/login_screen.dart';
-import 'state/campus_store.dart';
+import 'providers/preferences_provider.dart';
+import 'router.dart';
 import 'theme.dart';
 
-class CampusFlowApp extends StatelessWidget {
-  const CampusFlowApp({super.key, required this.store});
-
-  final CampusStore store;
+class CampusFlowApp extends ConsumerWidget {
+  const CampusFlowApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return CampusScope(
-      store: store,
-      child: ListenableBuilder(
-        listenable: store,
-        builder: (context, _) => MaterialApp(
-          title: 'CampusFlow',
-          debugShowCheckedModeBanner: false,
-          theme: campusTheme(Brightness.light),
-          darkTheme: campusTheme(Brightness.dark),
-          themeMode: store.themeSombre ? ThemeMode.dark : ThemeMode.light,
-          locale: const Locale('fr'),
-          supportedLocales: const [Locale('fr')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          // Connexion → Échéances · Cours · Profil
-          home: store.utilisateur == null ? const LoginScreen() : const HomeShell(),
-        ),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sombre = ref.watch(preferencesProvider.select((p) => p.themeSombre));
+
+    return MaterialApp.router(
+      title: 'CampusFlow',
+      debugShowCheckedModeBanner: false,
+      theme: campusTheme(Brightness.light),
+      darkTheme: campusTheme(Brightness.dark),
+      themeMode: sombre ? ThemeMode.dark : ThemeMode.light,
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      routerConfig: ref.watch(routerProvider),
     );
   }
 }

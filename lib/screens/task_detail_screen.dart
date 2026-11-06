@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../state/campus_store.dart';
+import '../providers/cours_provider.dart';
+import '../providers/preferences_provider.dart';
+import '../providers/taches_provider.dart';
 import '../theme.dart';
 import '../utils/dates.dart';
-import 'task_form_screen.dart';
 
-/// Wireframe « Détail » en plein écran (téléphone) : « ← Projet Flutter ».
-class TaskDetailScreen extends StatelessWidget {
+/// Wireframe « Détail » en plein écran (téléphone), route /taches/:id.
+/// Aucun paramètre à part l'id : la tâche est lue dans tachesProvider.
+class TaskDetailScreen extends ConsumerWidget {
   const TaskDetailScreen({super.key, required this.taskId});
 
   final String taskId;
 
   @override
-  Widget build(BuildContext context) {
-    final task = CampusScope.of(context).tache(taskId);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final task = ref.watch(tacheParIdProvider(taskId));
     return Scaffold(
       appBar: AppBar(title: Text(task?.titre ?? 'Tâche')),
       body: TaskDetailView(
         taskId: taskId,
-        apresSuppression: () => Navigator.of(context).pop(),
+        apresSuppression: () => context.pop(),
       ),
     );
   }
@@ -26,20 +30,29 @@ class TaskDetailScreen extends StatelessWidget {
 
 /// Contenu du détail, réutilisé à droite de la liste en fenêtre étendue.
 /// Cours, échéance, rappel, description, puis « Marquer comme fait » et « Modifier ».
-class TaskDetailView extends StatelessWidget {
+class TaskDetailView extends ConsumerWidget {
   const TaskDetailView({super.key, required this.taskId, required this.apresSuppression});
 
   final String taskId;
   final VoidCallback apresSuppression;
 
   @override
-  Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
-    final task = store.tache(taskId);
-    if (task == null) return const SizedBox.shrink();
-
+  Widget build(BuildContext context, WidgetRef ref) {
+    final task = ref.watch(tacheParIdProvider(taskId));
     final theme = Theme.of(context);
-    final cours = store.coursDe(task.coursId);
+
+    if (task == null) {
+      final chargement = ref.watch(tachesProvider).isLoading;
+      return Center(
+        child: chargement
+            ? const CircularProgressIndicator()
+            : Text('Tâche introuvable.', style: theme.textTheme.bodyLarge),
+      );
+    }
+
+    final cours = ref.watch(coursParIdProvider(task.coursId));
+    final rappels = ref.watch(preferencesProvider.select((p) => p.rappels));
+    final notifier = ref.read(tachesProvider.notifier);
 
     Future<void> supprimer() async {
       final ok = await showDialog<bool>(
@@ -55,12 +68,12 @@ class TaskDetailView extends StatelessWidget {
       );
       if (ok == true && context.mounted) {
         final messages = ScaffoldMessenger.of(context);
-        store.supprimer(task.id);
+        notifier.supprimer(task.id);
         apresSuppression();
         // Dialog pour décider, SnackBar pour informer et permettre d'annuler.
         messages.showSnackBar(SnackBar(
           content: Text('« ${task.titre} » supprimée'),
-          action: SnackBarAction(label: 'Annuler', onPressed: () => store.enregistrer(task)),
+          action: SnackBarAction(label: 'Annuler', onPressed: () => notifier.enregistrer(task)),
         ));
       }
     }
@@ -80,7 +93,7 @@ class TaskDetailView extends StatelessWidget {
         _Ligne(
           icone: Icons.notifications_outlined,
           libelle: 'Rappel',
-          valeur: store.rappelsActives ? libelleRappel(task.rappel) : 'Rappels désactivés',
+          valeur: rappels ? libelleRappel(task.rappel) : 'Rappels désactivés',
         ),
         const Divider(height: Tokens.l * 2),
         Text('Description', style: theme.textTheme.titleMedium),
@@ -93,15 +106,13 @@ class TaskDetailView extends StatelessWidget {
         ),
         const SizedBox(height: Tokens.l * 1.5),
         FilledButton.icon(
-          onPressed: () => store.basculer(task.id),
+          onPressed: () => notifier.basculer(task.id),
           icon: Icon(task.terminee ? Icons.undo : Icons.check),
           label: Text(task.terminee ? 'Marquer à faire' : 'Marquer comme fait'),
         ),
         const SizedBox(height: Tokens.s),
         OutlinedButton.icon(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(fullscreenDialog: true, builder: (_) => TaskFormScreen(existante: task)),
-          ),
+          onPressed: () => context.go('/taches/${task.id}/modifier'),
           icon: const Icon(Icons.edit_outlined),
           label: const Text('Modifier'),
         ),

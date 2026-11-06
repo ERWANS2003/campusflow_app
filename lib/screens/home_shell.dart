@@ -1,24 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../theme.dart';
-import 'courses_screen.dart';
-import 'deadlines_screen.dart';
-import 'profile_screen.dart';
 
-/// Navigation principale : 3 destinations de même niveau.
+/// Coquille de navigation du StatefulShellRoute : 3 destinations de même niveau.
 /// - compact (< 600 dp) : barre de navigation inférieure, atteignable au pouce ;
 /// - moyen et étendu (≥ 600 dp) : rail de navigation à gauche.
-class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+class HomeShell extends StatelessWidget {
+  const HomeShell({super.key, required this.shell});
 
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
-
-  static const _pages = [DeadlinesScreen(), CoursesScreen(), ProfileScreen()];
+  /// Fourni par go_router : la branche active et la méthode goBranch.
+  final StatefulNavigationShell shell;
 
   static const _destinations = [
     (icone: Icons.event_note_outlined, active: Icons.event_note, libelle: 'Échéances'),
@@ -26,16 +18,19 @@ class _HomeShellState extends State<HomeShell> {
     (icone: Icons.person_outline, active: Icons.person, libelle: 'Profil'),
   ];
 
+  // Retoucher l'onglet actif revient à sa racine (ex. Détail → Échéances).
+  void _aller(int i) => shell.goBranch(i, initialLocation: i == shell.currentIndex);
+
   @override
   Widget build(BuildContext context) {
     final largeur = MediaQuery.sizeOf(context).width;
 
     if (largeur < Tokens.moyen) {
       return Scaffold(
-        body: _pages[_index],
+        body: shell,
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
+          selectedIndex: shell.currentIndex,
+          onDestinationSelected: _aller,
           destinations: [
             for (final d in _destinations)
               NavigationDestination(
@@ -52,8 +47,8 @@ class _HomeShellState extends State<HomeShell> {
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: _index,
-            onDestinationSelected: (i) => setState(() => _index = i),
+            selectedIndex: shell.currentIndex,
+            onDestinationSelected: _aller,
             labelType: NavigationRailLabelType.all,
             leading: Padding(
               padding: const EdgeInsets.symmetric(vertical: Tokens.m),
@@ -69,7 +64,7 @@ class _HomeShellState extends State<HomeShell> {
             ],
           ),
           const VerticalDivider(width: 1),
-          Expanded(child: _pages[_index]),
+          Expanded(child: shell),
         ],
       ),
     );

@@ -1,44 +1,43 @@
-import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../state/campus_store.dart';
+import '../providers/cours_provider.dart';
+import '../providers/taches_provider.dart';
 import '../theme.dart';
 import '../widgets/task_card.dart';
-import 'task_detail_screen.dart';
 
-/// Plan : Cours → liste des cours → tâches du cours.
-class CoursesScreen extends StatelessWidget {
+/// Route /cours : liste des cours → /cours/:id (tâches du cours).
+class CoursesScreen extends ConsumerWidget {
   const CoursesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cours = ref.watch(coursProvider);
+    final aFaire = ref.watch(tachesFiltreesProvider(Filtre.aFaire));
     final couleurs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Cours')),
-      body: ListView(
+      body: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: Tokens.s),
-        children: [
-          for (final c in store.cours)
-            Card(
-              child: ListTile(
-                minVerticalPadding: 12,
-                leading: CircleAvatar(
-                  backgroundColor: couleurs.primaryContainer,
-                  child: Text(c.nom[0], style: TextStyle(color: couleurs.onPrimaryContainer)),
-                ),
-                title: Text(c.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text(c.enseignant),
-                trailing: _Compteur(
-                  nombre: store.aFaire.where((t) => t.coursId == c.id).length,
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => CourseTasksScreen(course: c)),
-                ),
+        itemCount: cours.length,
+        itemBuilder: (context, i) {
+          final c = cours[i];
+          return Card(
+            child: ListTile(
+              minVerticalPadding: 12,
+              leading: CircleAvatar(
+                backgroundColor: couleurs.primaryContainer,
+                child: Text(c.nom[0], style: TextStyle(color: couleurs.onPrimaryContainer)),
               ),
+              title: Text(c.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text(c.enseignant),
+              trailing: _Compteur(nombre: aFaire.where((t) => t.coursId == c.id).length),
+              onTap: () => context.go('/cours/${c.id}'),
             ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -69,41 +68,47 @@ class _Compteur extends StatelessWidget {
   }
 }
 
-/// Tâches d'un cours, à faire puis terminées.
-class CourseTasksScreen extends StatelessWidget {
-  const CourseTasksScreen({super.key, required this.course});
+/// Route /cours/:id : tâches d'un cours, à faire puis terminées.
+class CourseTasksScreen extends ConsumerWidget {
+  const CourseTasksScreen({super.key, required this.coursId});
 
-  final Course course;
+  final String coursId;
 
   @override
-  Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
-    final taches = store.taches.where((t) => t.coursId == course.id).toList()
-      ..sort((a, b) => a.terminee == b.terminee ? 0 : (a.terminee ? 1 : -1));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final course = ref.watch(coursParIdProvider(coursId));
+    final toutes = ref.watch(tachesProvider).value ?? const [];
+    final taches = [
+      for (final t in toutes)
+        if (t.coursId == coursId && !t.terminee) t,
+      for (final t in toutes)
+        if (t.coursId == coursId && t.terminee) t,
+    ];
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(course.nom)),
       body: taches.isEmpty
           ? Center(child: Text('Aucune tâche pour ce cours.', style: theme.textTheme.bodyLarge))
-          : ListView(
+          : ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: Tokens.s),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(Tokens.m, 0, Tokens.m, Tokens.s),
-                  child: Text(
-                    course.enseignant,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ),
-                for (final t in taches)
-                  TaskCard(
-                    task: t,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => TaskDetailScreen(taskId: t.id)),
+              itemCount: taches.length + 1,
+              itemBuilder: (context, i) {
+                if (i == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(Tokens.m, 0, Tokens.m, Tokens.s),
+                    child: Text(
+                      course.enseignant,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),
-                  ),
-              ],
+                  );
+                }
+                final t = taches[i - 1];
+                return TaskCard(
+                  task: t,
+                  onTap: () => context.go('/cours/$coursId/taches/${t.id}'),
+                );
+              },
             ),
     );
   }

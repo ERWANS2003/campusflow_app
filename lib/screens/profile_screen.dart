@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../state/campus_store.dart';
+import '../providers/preferences_provider.dart';
+import '../providers/session_provider.dart';
+import '../providers/taches_provider.dart';
 import '../theme.dart';
 
-/// Plan : Profil → compte, préférences, déconnexion.
-class ProfileScreen extends StatelessWidget {
+/// Route /profil : compte, préférences, déconnexion.
+/// Se déconnecter suffit : le routeur redirige seul vers /login.
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
-    final user = store.utilisateur;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(sessionProvider);
+    final prefs = ref.watch(preferencesProvider);
+    final total = ref.watch(tachesProvider).value?.length ?? 0;
+    final faites = ref.watch(tachesFiltreesProvider(Filtre.faites)).length;
     final theme = Theme.of(context);
     if (user == null) return const SizedBox.shrink();
 
@@ -43,26 +49,26 @@ class ProfileScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.insights_outlined),
             title: const Text('Progression'),
-            subtitle: Text('${store.terminees.length} tâche(s) faite(s) sur ${store.taches.length}'),
+            subtitle: Text('$faites tâche(s) faite(s) sur $total'),
           ),
           const _Section('Préférences'),
           SwitchListTile(
             secondary: const Icon(Icons.notifications_outlined),
             title: const Text('Rappels avant échéance'),
-            value: store.rappelsActives,
-            onChanged: store.changerRappels,
+            value: prefs.rappels,
+            onChanged: ref.read(preferencesProvider.notifier).changerRappels,
           ),
           SwitchListTile(
             secondary: const Icon(Icons.dark_mode_outlined),
             title: const Text('Thème sombre'),
-            value: store.themeSombre,
-            onChanged: store.changerTheme,
+            value: prefs.themeSombre,
+            onChanged: ref.read(preferencesProvider.notifier).changerTheme,
           ),
           const Divider(height: Tokens.l * 2),
           ListTile(
             leading: Icon(Icons.logout, color: theme.colorScheme.error),
             title: Text('Se déconnecter', style: TextStyle(color: theme.colorScheme.error)),
-            onTap: store.deconnecter,
+            onTap: () => ref.read(sessionProvider.notifier).deconnecter(),
           ),
         ],
       ),

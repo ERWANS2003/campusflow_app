@@ -1,31 +1,37 @@
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../state/campus_store.dart';
+import '../providers/taches_provider.dart';
 import '../theme.dart';
 import '../utils/dates.dart';
 import '../widgets/task_card.dart';
 import 'task_detail_screen.dart';
-import 'task_form_screen.dart';
 
-/// Wireframe « Échéances » : la semaine en premier, onglets À faire / Terminées,
-/// bouton « + Nouvelle tâche ».
+/// Wireframe « Échéances » : la semaine en premier, filtres À faire / En retard /
+/// Terminées, bouton « + Nouvelle tâche ».
 /// Si la zone de contenu fait au moins 840 dp, la liste et le détail sont côte
 /// à côte. LayoutBuilder mesure la place donnée par le parent (l'écran moins le
 /// rail de navigation), pas l'écran entier comme MediaQuery.
-class DeadlinesScreen extends StatefulWidget {
+class DeadlinesScreen extends ConsumerStatefulWidget {
   const DeadlinesScreen({super.key});
 
   @override
-  State<DeadlinesScreen> createState() => _DeadlinesScreenState();
+  ConsumerState<DeadlinesScreen> createState() => _DeadlinesScreenState();
 }
 
-class _DeadlinesScreenState extends State<DeadlinesScreen> {
+class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
+  // État éphémère (une seule vue l'utilise) : setState suffit, pas besoin de Riverpod.
   String? _selection; // tâche affichée à droite en mode étendu
 
   @override
   Widget build(BuildContext context) {
-    final store = CampusScope.of(context);
+    // watch dans build : l'écran se reconstruit quand la liste change.
+    final etat = ref.watch(tachesProvider);
+    final aFaire = ref.watch(tachesFiltreesProvider(Filtre.aFaire));
+    final enRetard = ref.watch(tachesFiltreesProvider(Filtre.enRetard));
+    final faites = ref.watch(tachesFiltreesProvider(Filtre.faites));
 
     Widget contenu(BuildContext context, BoxConstraints contraintes) {
       final etendu = contraintes.maxWidth >= Tokens.etendu;
@@ -34,17 +40,21 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
         if (etendu) {
           setState(() => _selection = t.id);
         } else {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => TaskDetailScreen(taskId: t.id)),
-          );
+          context.go('/taches/${t.id}'); // l'adresse s'affiche dans le navigateur
         }
       }
 
       final listes = TabBarView(
         children: [
-          _ListeAFaire(taches: store.aFaire, ouvrir: ouvrir, selection: _selection),
+          _ListeAFaire(taches: aFaire, ouvrir: ouvrir, selection: _selection),
           _ListeSimple(
-            taches: store.terminees.reversed.toList(),
+            taches: enRetard,
+            ouvrir: ouvrir,
+            selection: _selection,
+            vide: 'Aucun retard. Bravo !',
+          ),
+          _ListeSimple(
+            taches: faites,
             ouvrir: ouvrir,
             selection: _selection,
             vide: 'Aucune tâche terminée pour l’instant.',
@@ -54,16 +64,17 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
 
       if (!etendu) return listes;
 
+      final selection = _selection;
       return Row(
         children: [
           Expanded(flex: 2, child: listes),
           const VerticalDivider(width: 1),
           Expanded(
             flex: 3,
-            child: _selection != null && store.tache(_selection!) != null
+            child: selection != null && ref.watch(tacheParIdProvider(selection)) != null
                 ? TaskDetailView(
-                    key: ValueKey(_selection),
-                    taskId: _selection!,
+                    key: ValueKey(selection),
+                    taskId: selection,
                     apresSuppression: () => setState(() => _selection = null),
                   )
                 : const _AucuneSelection(),
@@ -73,7 +84,7 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Échéances'),
@@ -81,31 +92,31 @@ class _DeadlinesScreenState extends State<DeadlinesScreen> {
             IconButton(
               tooltip: 'Actualiser',
               icon: const Icon(Icons.refresh),
-              onPressed: store.chargement ? null : store.charger,
+              onPressed: etat.isLoading ? null : () => ref.read(tachesProvider.notifier).recharger(),
             ),
           ],
           bottom: TabBar(
             tabs: [
-              Tab(text: 'À faire (${store.aFaire.length})'),
-              Tab(text: 'Terminées (${store.terminees.length})'),
+              Tab(text: 'À faire (${aFaire.length})'),
+              Tab(text: 'En retard (${enRetard.length})'),
+              Tab(text: 'Terminées (${faites.length})'),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(fullscreenDialog: true, builder: (_) => const TaskFormScreen()),
-          ),
+          onPressed: () => context.go('/taches/nouvelle'),
           icon: const Icon(Icons.add),
           label: const Text('Nouvelle tâche'),
         ),
-        body: switch ((store.chargement, store.erreur)) {
-          // 1. En cours
-          (true, _) => const Center(child: CircularProgressIndicator(semanticsLabel: 'Chargement')),
-          // 3. Erreur : message et bouton réessayer
-          (_, final String message) => _Erreur(message: message, reessayer: store.charger),
-          // 2. Valeur
-          _ => LayoutBuilder(builder: contenu),
-        },
+        // AsyncValue : les trois états, tous traités.
+        body: etat.when(
+          loading: () => const Center(child: CircularProgressIndicator(semanticsLabel: 'Chargement')),
+          error: (_, _) => _Erreur(
+            message: 'Impossible de charger les échéances. Vérifie ta connexion.',
+            reessayer: () => ref.read(tachesProvider.notifier).recharger(),
+          ),
+          data: (_) => LayoutBuilder(builder: contenu),
+        ),
       ),
     );
   }

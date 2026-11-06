@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../state/campus_store.dart';
+import '../providers/session_provider.dart';
 import '../theme.dart';
 
 /// Wireframe « Connexion » : logo CampusFlow, Email, Mot de passe, Se connecter.
-class LoginScreen extends StatefulWidget {
+/// Après connexion, le routeur redirige seul vers /taches.
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _motDePasse = TextEditingController();
-  bool _envoi = false;
-  bool _masque = true;
+  bool _masque = true; // état éphémère : setState suffit
 
   @override
   void dispose() {
@@ -25,11 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _seConnecter() async {
+  void _seConnecter() {
     if (!_form.currentState!.validate()) return;
-    setState(() => _envoi = true);
-    await CampusScope.of(context).connecter(_email.text.trim());
-    if (mounted) setState(() => _envoi = false);
+    ref.read(sessionProvider.notifier).connecter(_email.text.trim());
   }
 
   @override
@@ -98,15 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           (v == null || v.length < 4) ? 'Au moins 4 caractères.' : null,
                     ),
                     const SizedBox(height: Tokens.l),
-                    FilledButton(
-                      onPressed: _envoi ? null : _seConnecter,
-                      child: _envoi
-                          ? const SizedBox.square(
-                              dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Se connecter'),
-                    ),
+                    FilledButton(onPressed: _seConnecter, child: const Text('Se connecter')),
                     const SizedBox(height: Tokens.m),
                     Text(
                       'Démo : n’importe quel email et un mot de passe de 4 caractères.',
