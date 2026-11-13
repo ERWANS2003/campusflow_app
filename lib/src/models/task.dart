@@ -70,6 +70,18 @@ class Task {
     );
   }
 
+  /// Objet vers JSON, pour l'envoyer au serveur (POST, PATCH).
+  /// Inverse exact de [Task.fromJson] : `Task.fromJson(t.toJson())` redonne t.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'titre': titre,
+        'coursId': coursId,
+        'echeance': echeance.toIso8601String(),
+        'description': description,
+        'rappelMinutes': rappel?.inMinutes,
+        'terminee': terminee,
+      };
+
   bool get enRetard => !terminee && echeance.isBefore(DateTime.now());
 
   @override

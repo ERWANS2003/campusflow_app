@@ -31,6 +31,26 @@ void main() {
     expect(t.terminee, isFalse); // valeur par défaut
   });
 
+  test('toJson puis fromJson redonne la même tâche (aller-retour)', () {
+    final t = Task(
+      id: 't9',
+      titre: 'Lire les HIG',
+      coursId: 'ux',
+      echeance: DateTime(2026, 11, 20, 17),
+      rappel: const Duration(days: 1),
+    );
+
+    final json = t.toJson();
+    expect(json['echeance'], '2026-11-20T17:00:00.000');
+    expect(json['rappelMinutes'], 1440);
+
+    final relue = Task.fromJson(json);
+    expect(relue.titre, t.titre);
+    expect(relue.echeance, t.echeance);
+    expect(relue.rappel, t.rappel);
+    expect(relue.description, isNull);
+  });
+
   test('erreurs attendues : JSON invalide et réseau coupé', () async {
     expect(
       () => Task.fromJson({'id': 't3', 'titre': 42}),

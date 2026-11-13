@@ -28,6 +28,8 @@ class Course {
     return Course(id: id, nom: nom, enseignant: enseignant);
   }
 
+  Map<String, dynamic> toJson() => {'id': id, 'nom': nom, 'enseignant': enseignant};
+
   @override
   String toString() => 'Course($nom, $enseignant)';
 }

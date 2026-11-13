@@ -35,6 +35,8 @@ class User {
     return User(id: id, nom: nom, email: email, niveau: niveau);
   }
 
+  Map<String, dynamic> toJson() => {'id': id, 'nom': nom, 'email': email, 'niveau': niveau};
+
   @override
   String toString() => 'User($nom, $email)';
 }
