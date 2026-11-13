@@ -28,11 +28,9 @@ packages:
   campusflow_models:
     dependency: "direct main"
     description:
-      path: "."
-      ref: main
-      resolved-ref: "6cb97778f10ad5adbb0667df32791c7c51122523"
-      url: "https://github.com/ERWANS2003/campusflow_models.git"
-    source: git
+      path: campusflow_models
+      relative: true
+    source: path
     version: "1.0.0"
   characters:
     dependency: transitive
