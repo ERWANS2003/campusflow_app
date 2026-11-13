@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:campusflow_app/core/actions.dart';
 import 'package:campusflow_app/features/cours/application/cours_provider.dart';
 import 'package:campusflow_app/features/profil/application/preferences_provider.dart';
 import 'package:campusflow_app/features/taches/application/taches_provider.dart';
@@ -68,12 +69,17 @@ class TaskDetailView extends ConsumerWidget {
       );
       if (ok == true && context.mounted) {
         final messages = ScaffoldMessenger.of(context);
-        notifier.supprimer(task.id);
+        // Suppression optimiste : on ferme tout de suite, DELETE part en arrière-plan.
+        final suppression = tenter(messages, () => notifier.supprimer(task.id));
         apresSuppression();
-        // Dialog pour décider, SnackBar pour informer et permettre d'annuler.
+        if (!await suppression) return; // échec : la tâche est revenue, l'erreur s'affiche
+        // Dialog pour décider, SnackBar pour informer et permettre d'annuler (POST à nouveau).
         messages.showSnackBar(SnackBar(
           content: Text('« ${task.titre} » supprimée'),
-          action: SnackBarAction(label: 'Annuler', onPressed: () => notifier.enregistrer(task)),
+          action: SnackBarAction(
+            label: 'Annuler',
+            onPressed: () => tenter(messages, () => notifier.enregistrer(task)),
+          ),
         ));
       }
     }
@@ -106,7 +112,7 @@ class TaskDetailView extends ConsumerWidget {
         ),
         const SizedBox(height: Tokens.l * 1.5),
         FilledButton.icon(
-          onPressed: () => notifier.basculer(task.id),
+          onPressed: () => tenter(ScaffoldMessenger.of(context), () => notifier.basculer(task.id)),
           icon: Icon(task.terminee ? Icons.undo : Icons.check),
           label: Text(task.terminee ? 'Marquer à faire' : 'Marquer comme fait'),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:campusflow_app/core/actions.dart';
 import 'package:campusflow_app/features/cours/application/cours_provider.dart';
 import 'package:campusflow_app/features/taches/application/taches_provider.dart';
 import 'package:campusflow_app/core/theme.dart';
@@ -38,6 +39,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
   late DateTime _echeance;
   Duration? _rappel;
   Task? _existante;
+  bool _envoi = false; // requête en cours : bouton désactivé
 
   @override
   void initState() {
@@ -75,23 +77,30 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     });
   }
 
-  void _enregistrer() {
+  Future<void> _enregistrer() async {
     if (!_form.currentState!.validate()) return;
     final description = _description.text.trim();
     final titre = _titre.text.trim();
+    final messages = ScaffoldMessenger.of(context);
+    setState(() => _envoi = true);
     // Nouvel objet complet plutôt que copyWith : permet de vider la description
     // ou de retirer le rappel (copyWith ne sait pas remettre un champ à null).
-    ref.read(tachesProvider.notifier).enregistrer(Task(
+    final tache = Task(
       id: _existante?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       titre: titre,
-      coursId: _coursId ?? ref.read(coursProvider).first.id,
+      coursId: _coursId!,
       echeance: _echeance,
       description: description.isEmpty ? null : description,
       rappel: _rappel,
       terminee: _existante?.terminee ?? false,
-    ));
+    );
+    // POST ou PATCH : on attend la réponse du serveur avant de fermer.
+    final ok = await tenter(messages, () => ref.read(tachesProvider.notifier).enregistrer(tache));
+    if (!mounted) return;
+    setState(() => _envoi = false);
+    if (!ok) return; // l'erreur est affichée, le formulaire reste ouvert
     // SnackBar : informe sans bloquer (séance 5).
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    messages.showSnackBar(SnackBar(
       content: Text(_existante == null ? 'Tâche « $titre » ajoutée' : 'Tâche « $titre » modifiée'),
     ));
     context.pop();
@@ -99,7 +108,8 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cours = ref.watch(coursProvider);
+    final cours = ref.watch(coursProvider).value ?? const <Course>[];
+    _coursId ??= cours.isEmpty ? null : cours.first.id;
     final modification = _existante != null;
 
     return Scaffold(
@@ -125,12 +135,14 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             ),
             const SizedBox(height: Tokens.m),
             DropdownButtonFormField<String>(
-              initialValue: _coursId ?? cours.first.id,
+              key: ValueKey(cours.length), // recréé quand la liste arrive du serveur
+              initialValue: _coursId,
               decoration: const InputDecoration(labelText: 'Cours'),
               items: [
                 for (final c in cours) DropdownMenuItem(value: c.id, child: Text(c.nom)),
               ],
               onChanged: (v) => setState(() => _coursId = v),
+              validator: (v) => v == null ? 'Choisis un cours.' : null,
             ),
             const SizedBox(height: Tokens.m),
             InkWell(
@@ -161,7 +173,12 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
               maxLines: 6,
             ),
             const SizedBox(height: Tokens.l),
-            FilledButton(onPressed: _enregistrer, child: const Text('Enregistrer')),
+            FilledButton(
+              onPressed: _envoi ? null : _enregistrer, // null désactive le bouton
+              child: _envoi
+                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Enregistrer'),
+            ),
           ],
         ),
       ),

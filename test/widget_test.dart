@@ -1,22 +1,26 @@
 import 'package:campusflow_app/app.dart';
-import 'package:campusflow_app/features/auth/application/session_provider.dart';
-import 'package:campusflow_app/features/taches/application/taches_provider.dart';
-import 'package:campusflow_app/core/router.dart';
 import 'package:campusflow_app/core/dates.dart';
-import 'package:campusflow_models/campusflow_models.dart';
+import 'package:campusflow_app/core/router.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/features/cours/application/cours_provider.dart';
+import 'package:campusflow_app/features/cours/data/cours_repository.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/features/taches/data/fake_task_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-/// L'application avec un faux dépôt sans délai, injecté par Riverpod.
+/// Les dépôts en mémoire, injectés par Riverpod : aucun serveur nécessaire.
+List<Override> _sansReseau({bool echec = false}) => [
+      taskRepositoryProvider.overrideWithValue(FakeTaskRepository(echec: echec)),
+      coursRepositoryProvider.overrideWithValue(const FakeCoursRepository()),
+    ];
+
 Widget _app({bool echec = false}) => ProviderScope(
       retry: (_, _) => null,
-      overrides: [
-        taskRepositoryProvider.overrideWithValue(
-          FakeTaskRepository(delai: Duration.zero, echec: echec),
-        ),
-      ],
+      overrides: _sansReseau(echec: echec),
       child: const CampusFlowApp(),
     );
 
@@ -147,9 +151,7 @@ void main() {
     setUp(() {
       conteneur = ProviderContainer(
         retry: (_, _) => null,
-        overrides: [
-          taskRepositoryProvider.overrideWithValue(const FakeTaskRepository(delai: Duration.zero)),
-        ],
+        overrides: _sansReseau(),
       );
       addTearDown(conteneur.dispose);
     });
@@ -163,12 +165,36 @@ void main() {
       final avant = await conteneur.read(tachesProvider.future);
       expect(conteneur.read(tachesFiltreesProvider(Filtre.enRetard)).map((t) => t.id), ['t4']);
 
-      conteneur.read(tachesProvider.notifier).basculer('t4');
+      await conteneur.read(tachesProvider.notifier).basculer('t4');
 
       final apres = conteneur.read(tachesProvider).value!;
       expect(identical(avant, apres), isFalse); // nouvelle liste, pas de state.add
       expect(conteneur.read(tachesFiltreesProvider(Filtre.enRetard)), isEmpty);
       expect(conteneur.read(tachesFiltreesProvider(Filtre.faites)).map((t) => t.id), contains('t4'));
+    });
+
+    test('cocher échoue côté serveur : la case revient et l’erreur remonte', () async {
+      final depot = FakeTaskRepository();
+      final c = ProviderContainer(
+        retry: (_, _) => null,
+        overrides: [
+          taskRepositoryProvider.overrideWithValue(depot),
+          coursRepositoryProvider.overrideWithValue(const FakeCoursRepository()),
+        ],
+      );
+      addTearDown(c.dispose);
+      c.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      await c.read(tachesProvider.future);
+      await depot.supprimer('t1'); // le serveur ne connaît plus t1 → 404
+
+      await expectLater(c.read(tachesProvider.notifier).basculer('t1'), throwsA(isA<Object>()));
+      expect(c.read(tacheParIdProvider('t1'))!.terminee, isFalse); // état d'avant remis
+    });
+
+    test('les cours viennent du dépôt', () async {
+      conteneur.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      final cours = await conteneur.read(coursProvider.future);
+      expect(cours.map((c) => c.id), ['mobile', 'ux', 'bdd']);
     });
 
     test('déconnexion : la liste est vidée', () async {

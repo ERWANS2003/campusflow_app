@@ -2,6 +2,7 @@ import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:campusflow_app/core/actions.dart';
 import 'package:campusflow_app/features/cours/application/cours_provider.dart';
 import 'package:campusflow_app/features/taches/application/taches_provider.dart';
 import 'package:campusflow_app/core/dates.dart';
@@ -36,7 +37,10 @@ class TaskCard extends ConsumerWidget {
                 ? 'Marquer « ${task.titre} » à faire'
                 : 'Marquer « ${task.titre} » comme fait',
             // read dans un gestionnaire d'événement, jamais watch.
-            onChanged: (_) => ref.read(tachesProvider.notifier).basculer(task.id),
+            onChanged: (_) => tenter(
+              ScaffoldMessenger.of(context),
+              () => ref.read(tachesProvider.notifier).basculer(task.id),
+            ),
           ),
           title: Text(
             task.titre,

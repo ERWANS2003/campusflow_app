@@ -13,31 +13,44 @@ class CoursesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cours = ref.watch(coursProvider);
+    final etat = ref.watch(coursProvider); // GET /cours
     final aFaire = ref.watch(tachesFiltreesProvider(Filtre.aFaire));
     final couleurs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Cours')),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: Tokens.s),
-        itemCount: cours.length,
-        itemBuilder: (context, i) {
-          final c = cours[i];
-          return Card(
-            child: ListTile(
-              minVerticalPadding: 12,
-              leading: CircleAvatar(
-                backgroundColor: couleurs.primaryContainer,
-                child: Text(c.nom[0], style: TextStyle(color: couleurs.onPrimaryContainer)),
+      body: etat.when(
+        loading: () => const Center(child: CircularProgressIndicator(semanticsLabel: 'Chargement')),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('$e', textAlign: TextAlign.center),
+              const SizedBox(height: Tokens.m),
+              FilledButton(onPressed: () => ref.invalidate(coursProvider), child: const Text('Réessayer')),
+            ],
+          ),
+        ),
+        data: (cours) => ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: Tokens.s),
+          itemCount: cours.length,
+          itemBuilder: (context, i) {
+            final c = cours[i];
+            return Card(
+              child: ListTile(
+                minVerticalPadding: 12,
+                leading: CircleAvatar(
+                  backgroundColor: couleurs.primaryContainer,
+                  child: Text(c.nom[0], style: TextStyle(color: couleurs.onPrimaryContainer)),
+                ),
+                title: Text(c.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text(c.enseignant),
+                trailing: _Compteur(nombre: aFaire.where((t) => t.coursId == c.id).length),
+                onTap: () => context.go('/cours/${c.id}'),
               ),
-              title: Text(c.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text(c.enseignant),
-              trailing: _Compteur(nombre: aFaire.where((t) => t.coursId == c.id).length),
-              onTap: () => context.go('/cours/${c.id}'),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
