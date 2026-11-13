@@ -1,0 +1,12 @@
+{
+  "name": "campusflow-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API simulée de CampusFlow (json-server + connexion par jeton)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "json-server": "0.17.4"
+  }
+}

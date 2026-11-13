@@ -1,0 +1,84 @@
+{
+  "taches": [
+    {
+      "id": "t1",
+      "titre": "Rendu TP Dart",
+      "coursId": "mobile",
+      "echeance": "2026-11-16T23:59:00.000",
+      "description": "Package campusflow_models : 3 modèles, fromJson, 3 tests.",
+      "rappelMinutes": 1440,
+      "terminee": false
+    },
+    {
+      "id": "t2",
+      "titre": "TP CampusFlow (dépôt GitHub)",
+      "coursId": "mobile",
+      "echeance": "2026-11-22T23:59:00.000",
+      "description": "Lien du dépôt à envoyer par e-mail. Un commit par TP.",
+      "rappelMinutes": 2880,
+      "terminee": false
+    },
+    {
+      "id": "t3",
+      "titre": "QCM séances 1, 2 et 4",
+      "coursId": "mobile",
+      "echeance": "2026-11-20T08:00:00.000",
+      "description": null,
+      "rappelMinutes": 1440,
+      "terminee": false
+    },
+    {
+      "id": "t4",
+      "titre": "Fiche persona",
+      "coursId": "ux",
+      "echeance": "2026-11-10T18:00:00.000",
+      "description": "Persona fictif réaliste et deux job stories.",
+      "rappelMinutes": null,
+      "terminee": false
+    },
+    {
+      "id": "t5",
+      "titre": "TP SQL",
+      "coursId": "bdd",
+      "echeance": "2026-11-30T12:00:00.000",
+      "description": null,
+      "rappelMinutes": null,
+      "terminee": false
+    },
+    {
+      "id": "t6",
+      "titre": "Dossier de conception v1",
+      "coursId": "ux",
+      "echeance": "2026-11-05T23:59:00.000",
+      "description": null,
+      "rappelMinutes": null,
+      "terminee": true
+    }
+  ],
+  "cours": [
+    {
+      "id": "mobile",
+      "nom": "Programmation mobile",
+      "enseignant": "M. Compaoré"
+    },
+    {
+      "id": "ux",
+      "nom": "UX/UI mobile",
+      "enseignant": "M. Compaoré"
+    },
+    {
+      "id": "bdd",
+      "nom": "Bases de données",
+      "enseignant": "Mme Kaboré"
+    }
+  ],
+  "utilisateurs": [
+    {
+      "id": "u1",
+      "nom": "Amina",
+      "email": "amina@etudiant.bf",
+      "niveau": "Master 1 Informatique",
+      "motDePasse": "campus"
+    }
+  ]
+}
