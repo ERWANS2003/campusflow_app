@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/preferences_provider.dart';
-import '../providers/session_provider.dart';
-import '../providers/taches_provider.dart';
-import '../theme.dart';
+import 'package:campusflow_app/features/profil/application/preferences_provider.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/theme.dart';
 
 /// Route /profil : compte, préférences, déconnexion.
 /// Se déconnecter suffit : le routeur redirige seul vers /login.

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/session_provider.dart';
-import '../theme.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/core/theme.dart';
 
 /// Wireframe « Connexion » : logo CampusFlow, Email, Mot de passe, Se connecter.
 /// Après connexion, le routeur redirige seul vers /taches.

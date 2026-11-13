@@ -2,9 +2,9 @@ import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/cours_provider.dart';
-import '../providers/taches_provider.dart';
-import '../utils/dates.dart';
+import 'package:campusflow_app/features/cours/application/cours_provider.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/dates.dart';
 
 /// Composant « carte de tâche » du design system.
 /// La case à cocher permet de marquer comme fait sans ouvrir le détail.

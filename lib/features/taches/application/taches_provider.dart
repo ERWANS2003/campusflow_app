@@ -1,7 +1,7 @@
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'session_provider.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
 
 /// Injection de dépendances : le dépôt est fourni par Riverpod.
 /// Les tests le remplacent par un faux dépôt sans délai (overrideWithValue).

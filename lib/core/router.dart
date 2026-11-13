@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'providers/session_provider.dart';
-import 'screens/courses_screen.dart';
-import 'screens/deadlines_screen.dart';
-import 'screens/home_shell.dart';
-import 'screens/login_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/task_detail_screen.dart';
-import 'screens/task_form_screen.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/features/cours/presentation/courses_screen.dart';
+import 'package:campusflow_app/features/taches/presentation/deadlines_screen.dart';
+import 'package:campusflow_app/core/home_shell.dart';
+import 'package:campusflow_app/features/auth/presentation/login_screen.dart';
+import 'package:campusflow_app/features/profil/presentation/profile_screen.dart';
+import 'package:campusflow_app/features/taches/presentation/task_detail_screen.dart';
+import 'package:campusflow_app/features/taches/presentation/task_form_screen.dart';
 
 /// Routes de CampusFlow (séance 6) :
 ///

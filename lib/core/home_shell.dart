@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../theme.dart';
+import 'package:campusflow_app/core/theme.dart';
 
 /// Coquille de navigation du StatefulShellRoute : 3 destinations de même niveau.
 /// - compact (< 600 dp) : barre de navigation inférieure, atteignable au pouce ;

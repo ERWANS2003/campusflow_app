@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'providers/preferences_provider.dart';
-import 'router.dart';
-import 'theme.dart';
+import 'package:campusflow_app/features/profil/application/preferences_provider.dart';
+import 'package:campusflow_app/core/router.dart';
+import 'package:campusflow_app/core/theme.dart';
 
 class CampusFlowApp extends ConsumerWidget {
   const CampusFlowApp({super.key});

@@ -1,8 +1,8 @@
 import 'package:campusflow_app/app.dart';
-import 'package:campusflow_app/providers/session_provider.dart';
-import 'package:campusflow_app/providers/taches_provider.dart';
-import 'package:campusflow_app/router.dart';
-import 'package:campusflow_app/utils/dates.dart';
+import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/router.dart';
+import 'package:campusflow_app/core/dates.dart';
 import 'package:campusflow_models/campusflow_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

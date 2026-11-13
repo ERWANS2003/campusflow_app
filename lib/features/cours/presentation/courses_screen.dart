@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/cours_provider.dart';
-import '../providers/taches_provider.dart';
-import '../theme.dart';
-import '../widgets/task_card.dart';
+import 'package:campusflow_app/features/cours/application/cours_provider.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/theme.dart';
+import 'package:campusflow_app/features/taches/presentation/task_card.dart';
 
 /// Route /cours : liste des cours → /cours/:id (tâches du cours).
 class CoursesScreen extends ConsumerWidget {

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/cours_provider.dart';
-import '../providers/preferences_provider.dart';
-import '../providers/taches_provider.dart';
-import '../theme.dart';
-import '../utils/dates.dart';
+import 'package:campusflow_app/features/cours/application/cours_provider.dart';
+import 'package:campusflow_app/features/profil/application/preferences_provider.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/theme.dart';
+import 'package:campusflow_app/core/dates.dart';
 
 /// Wireframe « Détail » en plein écran (téléphone), route /taches/:id.
 /// Aucun paramètre à part l'id : la tâche est lue dans tachesProvider.

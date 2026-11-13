@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/taches_provider.dart';
-import '../theme.dart';
-import '../utils/dates.dart';
-import '../widgets/task_card.dart';
-import 'task_detail_screen.dart';
+import 'package:campusflow_app/features/taches/application/taches_provider.dart';
+import 'package:campusflow_app/core/theme.dart';
+import 'package:campusflow_app/core/dates.dart';
+import 'package:campusflow_app/features/taches/presentation/task_card.dart';
+import 'package:campusflow_app/features/taches/presentation/task_detail_screen.dart';
 
 /// Wireframe « Échéances » : la semaine en premier, filtres À faire / En retard /
 /// Terminées, bouton « + Nouvelle tâche ».
