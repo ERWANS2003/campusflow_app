@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:campusflow_app/core/demarrage_screen.dart';
 import 'package:campusflow_app/features/auth/application/session_provider.dart';
 import 'package:campusflow_app/features/cours/presentation/courses_screen.dart';
 import 'package:campusflow_app/features/taches/presentation/deadlines_screen.dart';
@@ -30,22 +31,28 @@ import 'package:campusflow_app/features/taches/presentation/task_form_screen.dar
 final _racine = GlobalKey<NavigatorState>(debugLabel: 'racine');
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Le routeur réévalue `redirect` à chaque connexion / déconnexion.
-  final connecte = ValueNotifier<bool>(ref.read(sessionProvider) != null);
-  ref.listen(sessionProvider, (_, utilisateur) => connecte.value = utilisateur != null);
-  ref.onDispose(connecte.dispose);
+  // Le routeur réévalue `redirect` à chaque changement de session :
+  // connexion, déconnexion, jeton expiré (401).
+  final changements = ValueNotifier<int>(0);
+  ref.listen(sessionProvider, (_, _) => changements.value++);
+  ref.onDispose(changements.dispose);
 
   return GoRouter(
     navigatorKey: _racine,
     initialLocation: '/taches',
-    refreshListenable: connecte,
+    refreshListenable: changements,
     redirect: (context, state) {
-      final surLogin = state.matchedLocation == '/login';
-      if (!connecte.value) return surLogin ? null : '/login';
-      if (surLogin) return '/taches';
+      final session = ref.read(sessionProvider);
+      final ici = state.matchedLocation;
+      // Au lancement, on vérifie le jeton enregistré : écran d'attente.
+      if (session.isLoading && !session.hasValue) return ici == '/demarrage' ? null : '/demarrage';
+      final connecte = session.value != null;
+      if (!connecte) return ici == '/login' ? null : '/login';
+      if (ici == '/login' || ici == '/demarrage') return '/taches';
       return null;
     },
     routes: [
+      GoRoute(path: '/demarrage', builder: (_, _) => const DemarrageScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
 
       // Les trois destinations de la barre. Chaque branche garde sa propre pile :

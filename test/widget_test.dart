@@ -1,7 +1,9 @@
 import 'package:campusflow_app/app.dart';
 import 'package:campusflow_app/core/dates.dart';
 import 'package:campusflow_app/core/router.dart';
+import 'package:campusflow_app/core/token_storage.dart';
 import 'package:campusflow_app/features/auth/application/session_provider.dart';
+import 'package:campusflow_app/features/auth/data/auth_repository.dart';
 import 'package:campusflow_app/features/cours/application/cours_provider.dart';
 import 'package:campusflow_app/features/cours/data/cours_repository.dart';
 import 'package:campusflow_app/features/taches/application/taches_provider.dart';
@@ -13,9 +15,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 /// Les dépôts en mémoire, injectés par Riverpod : aucun serveur nécessaire.
-List<Override> _sansReseau({bool echec = false}) => [
-      taskRepositoryProvider.overrideWithValue(FakeTaskRepository(echec: echec)),
+List<Override> _sansReseau({bool echec = false, FakeTaskRepository? depot, TokenStorage? stockage}) => [
+      taskRepositoryProvider.overrideWithValue(depot ?? FakeTaskRepository(echec: echec)),
       coursRepositoryProvider.overrideWithValue(const FakeCoursRepository()),
+      authRepositoryProvider.overrideWithValue(const FakeAuthRepository()),
+      tokenStorageProvider.overrideWithValue(stockage ?? MemoireTokenStorage()),
     ];
 
 Widget _app({bool echec = false}) => ProviderScope(
@@ -30,11 +34,17 @@ ProviderContainer _conteneur(WidgetTester tester) =>
 String _adresse(WidgetTester tester) =>
     _conteneur(tester).read(routerProvider).routerDelegate.currentConfiguration.uri.toString();
 
-Future<void> _seConnecter(WidgetTester tester) async {
+Future<void> _seConnecter(WidgetTester tester, {String motDePasse = 'secret'}) async {
+  await tester.pumpAndSettle(); // /demarrage → /login
   await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'amina@etudiant.bf');
-  await tester.enterText(find.widgetWithText(TextFormField, 'Mot de passe'), 'secret');
+  await tester.enterText(find.widgetWithText(TextFormField, 'Mot de passe'), motDePasse);
   await tester.tap(find.text('Se connecter'));
   await tester.pumpAndSettle();
+}
+
+Future<void> _connecter(ProviderContainer c) async {
+  await c.read(sessionProvider.future); // la session a fini de lire le stockage
+  await c.read(sessionProvider.notifier).connecter('amina@etudiant.bf', 'secret');
 }
 
 void _telephone(WidgetTester tester) {
@@ -45,6 +55,45 @@ void _telephone(WidgetTester tester) {
 
 void main() {
   setUpAll(() => initializeDateFormatting('fr'));
+
+  group('connexion (séance 7)', () {
+    testWidgets('mauvais mot de passe : message sous le formulaire, on reste sur /login', (tester) async {
+      await tester.pumpWidget(_app());
+      await _seConnecter(tester, motDePasse: 'mauvais'); // le faux serveur répond 401
+
+      expect(find.text('Email ou mot de passe incorrect.'), findsOneWidget);
+      expect(_adresse(tester), '/login');
+      expect(await _conteneur(tester).read(tokenStorageProvider).lire(), isNull);
+    });
+
+    testWidgets('jeton déjà enregistré : connecté au démarrage, sans repasser par /login', (tester) async {
+      final stockage = MemoireTokenStorage();
+      await stockage.ecrire('jeton-test');
+      await tester.pumpWidget(ProviderScope(
+        retry: (_, _) => null,
+        overrides: _sansReseau(stockage: stockage),
+        child: const CampusFlowApp(),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(_adresse(tester), '/taches');
+    });
+
+    testWidgets('la déconnexion efface le jeton du stockage', (tester) async {
+      _telephone(tester);
+      await tester.pumpWidget(_app());
+      await _seConnecter(tester);
+      final stockage = _conteneur(tester).read(tokenStorageProvider);
+      expect(await stockage.lire(), 'jeton-test');
+
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Se déconnecter'));
+      await tester.pumpAndSettle();
+
+      expect(await stockage.lire(), isNull);
+    });
+  });
 
   group('navigation (go_router)', () {
     testWidgets('non connecté : redirigé vers /login', (tester) async {
@@ -161,7 +210,7 @@ void main() {
     });
 
     test('basculer remplace la liste (état immuable) et met à jour les filtres', () async {
-      conteneur.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      await _connecter(conteneur);
       final avant = await conteneur.read(tachesProvider.future);
       expect(conteneur.read(tachesFiltreesProvider(Filtre.enRetard)).map((t) => t.id), ['t4']);
 
@@ -177,13 +226,10 @@ void main() {
       final depot = FakeTaskRepository();
       final c = ProviderContainer(
         retry: (_, _) => null,
-        overrides: [
-          taskRepositoryProvider.overrideWithValue(depot),
-          coursRepositoryProvider.overrideWithValue(const FakeCoursRepository()),
-        ],
+        overrides: _sansReseau(depot: depot),
       );
       addTearDown(c.dispose);
-      c.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      await _connecter(c);
       await c.read(tachesProvider.future);
       await depot.supprimer('t1'); // le serveur ne connaît plus t1 → 404
 
@@ -192,16 +238,16 @@ void main() {
     });
 
     test('les cours viennent du dépôt', () async {
-      conteneur.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      await _connecter(conteneur);
       final cours = await conteneur.read(coursProvider.future);
       expect(cours.map((c) => c.id), ['mobile', 'ux', 'bdd']);
     });
 
     test('déconnexion : la liste est vidée', () async {
-      conteneur.read(sessionProvider.notifier).connecter('amina@etudiant.bf');
+      await _connecter(conteneur);
       expect(await conteneur.read(tachesProvider.future), isNotEmpty);
 
-      conteneur.read(sessionProvider.notifier).deconnecter();
+      await conteneur.read(sessionProvider.notifier).deconnecter();
       expect(await conteneur.read(tachesProvider.future), isEmpty);
     });
   });

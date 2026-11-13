@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:campusflow_app/core/api_exception.dart';
 import 'package:campusflow_app/features/auth/application/session_provider.dart';
 import 'package:campusflow_app/core/theme.dart';
 
@@ -17,7 +18,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _form = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _motDePasse = TextEditingController();
-  bool _masque = true; // état éphémère : setState suffit
+  // États éphémères de cet écran : setState suffit.
+  bool _masque = true;
+  bool _envoi = false;
+  String? _erreur;
 
   @override
   void dispose() {
@@ -26,9 +30,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _seConnecter() {
-    if (!_form.currentState!.validate()) return;
-    ref.read(sessionProvider.notifier).connecter(_email.text.trim());
+  /// POST /login. Réussite : le jeton est rangé et le routeur part vers /taches.
+  /// Échec (401, serveur coupé) : le message s'affiche sous le formulaire.
+  Future<void> _seConnecter() async {
+    if (_envoi || !_form.currentState!.validate()) return;
+    setState(() {
+      _envoi = true;
+      _erreur = null;
+    });
+    try {
+      await ref.read(sessionProvider.notifier).connecter(_email.text.trim(), _motDePasse.text);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _erreur = e.message);
+    } finally {
+      if (mounted) setState(() => _envoi = false);
+    }
   }
 
   @override
@@ -96,11 +112,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       validator: (v) =>
                           (v == null || v.length < 4) ? 'Au moins 4 caractères.' : null,
                     ),
+                    if (_erreur != null) ...[
+                      const SizedBox(height: Tokens.m),
+                      Semantics(
+                        liveRegion: true, // lu par le lecteur d'écran dès qu'il apparaît
+                        child: Text(
+                          _erreur!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: Tokens.l),
-                    FilledButton(onPressed: _seConnecter, child: const Text('Se connecter')),
+                    FilledButton(
+                      onPressed: _envoi ? null : _seConnecter,
+                      child: _envoi
+                          ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Se connecter'),
+                    ),
                     const SizedBox(height: Tokens.m),
                     Text(
-                      'Démo : n’importe quel email et un mot de passe de 4 caractères.',
+                      'Compte de démo (serveur server/) : amina@etudiant.bf / campus',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),

@@ -13,7 +13,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(sessionProvider);
+    final user = ref.watch(sessionProvider).value;
     final prefs = ref.watch(preferencesProvider);
     final total = ref.watch(tachesProvider).value?.length ?? 0;
     final faites = ref.watch(tachesFiltreesProvider(Filtre.faites)).length;

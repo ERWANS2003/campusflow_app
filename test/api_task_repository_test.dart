@@ -1,40 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:campusflow_app/core/api_exception.dart';
 import 'package:campusflow_app/features/taches/data/api_task_repository.dart';
 import 'package:campusflow_models/campusflow_models.dart' show Task;
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Faux réseau pour Dio : note chaque requête et renvoie une réponse préparée.
-/// On vérifie ainsi la méthode HTTP, l'adresse et le corps envoyés, sans serveur.
-class _FauxReseau implements HttpClientAdapter {
-  _FauxReseau(this.repondre);
-
-  final (int, Object?) Function(RequestOptions options) repondre;
-  final requetes = <RequestOptions>[];
-
-  @override
-  Future<ResponseBody> fetch(
-    RequestOptions options,
-    Stream<Uint8List>? requestStream,
-    Future<void>? cancelFuture,
-  ) async {
-    requetes.add(options);
-    final (statut, corps) = repondre(options);
-    return ResponseBody.fromString(
-      jsonEncode(corps),
-      statut,
-      headers: {
-        Headers.contentTypeHeader: [Headers.jsonContentType],
-      },
-    );
-  }
-
-  @override
-  void close({bool force = false}) {}
-}
+import 'faux_reseau.dart';
 
 const _json = {
   'id': 't1',
@@ -46,8 +16,8 @@ const _json = {
   'terminee': false,
 };
 
-(ApiTaskRepository, _FauxReseau) _depot((int, Object?) Function(RequestOptions) repondre) {
-  final reseau = _FauxReseau(repondre);
+(ApiTaskRepository, FauxReseau) _depot((int, Object?) Function(RequestOptions) repondre) {
+  final reseau = FauxReseau(repondre);
   final dio = Dio(BaseOptions(baseUrl: 'http://api.test'))..httpClientAdapter = reseau;
   return (ApiTaskRepository(dio), reseau);
 }

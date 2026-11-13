@@ -11,7 +11,7 @@ final coursRepositoryProvider = Provider<CoursRepository>(
 
 /// Cours de l'étudiant, lus depuis l'API (GET /cours) une fois connecté.
 final coursProvider = FutureProvider<List<Course>>((ref) async {
-  if (ref.watch(sessionProvider) == null) return const [];
+  if (ref.watch(sessionProvider.select((s) => s.value?.id)) == null) return const [];
   return ref.watch(coursRepositoryProvider).lister();
 });
 

@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Séance 7 : l'application appelle l'API, en debug comme en release. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="campusflow_app"
         android:name="${applicationName}"

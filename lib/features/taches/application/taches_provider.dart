@@ -24,8 +24,9 @@ class TachesNotifier extends AsyncNotifier<List<Task>> {
   @override
   Future<List<Task>> build() async {
     // Se recharge à la connexion et se vide à la déconnexion.
-    final utilisateur = ref.watch(sessionProvider);
-    if (utilisateur == null) return const [];
+    // select : ne se recharge que si l'utilisateur change, pas à chaque état de la session.
+    final utilisateurId = ref.watch(sessionProvider.select((s) => s.value?.id));
+    if (utilisateurId == null) return const [];
     return trierParEcheance(await ref.watch(taskRepositoryProvider).lister());
   }
 

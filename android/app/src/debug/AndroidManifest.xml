@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Séance 7 : le serveur json-server local parle en HTTP (pas HTTPS).
+         Android bloque le HTTP en clair par défaut ; on l'autorise en debug
+         seulement. Une vraie API de production doit être en HTTPS. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>
