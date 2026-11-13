@@ -1,39 +1,16 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# campusflow_models
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Package Dart pur de la **séance 3** : les données de CampusFlow, indépendamment de toute interface.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+- **Trois modèles immuables** : `Task`, `Course`, `User`, avec des attributs `final`, un constructeur nommé, `copyWith`, `fromJson` et `toJson`.
+- **Un dépôt simulé** : `FakeTaskRepository` renvoie des tâches après un `Future.delayed`, et peut simuler une coupure réseau.
+- **Des tests** (`dart test`) : `copyWith`, `fromJson`, l'aller-retour JSON et une erreur attendue.
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+L'application Flutter (dossier parent) l'utilise comme dépendance locale : `campusflow_models: path: campusflow_models`.
 
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+```bash
+dart test                                    # les tests
+dart run example/campusflow_models_example.dart   # chargement simulé, succès puis erreur
 ```
 
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+Sous Windows, `lancer.bat` (texte) et `Lanceur.bat` (fenêtre) enchaînent dépendances, analyse, tests et exemple.
